@@ -106,6 +106,8 @@ class Pattern:
             output nodes order determined by user. each index corresponds to that of logical qubits.
         """
         self.output_nodes = output_nodes
+    
+
 
     def __repr__(self):
         return f"graphix.pattern.Pattern object with {len(self.seq)} commands and {self.width} output qubits"
@@ -909,6 +911,12 @@ class Pattern:
             elif cmd[0] == "E":
                 edge_list.append(cmd[1])
         return node_list, edge_list
+    
+    # def get_nx_graph(self):
+    #     nodes, edges = self.get_graph()
+    #     g = nx.Graph()
+    #     g.add_nodes_from(nodes)
+    #     g.add_edges_from(edges)
 
     def get_isolated_nodes(self):
         """Get isolated nodes.
@@ -1376,7 +1384,7 @@ class CommandNode:
         if cmd >= 0:
             return ["E", (self.index, cmd)]
         elif cmd == -1:
-            return ["M", self.index] + self.Mprop
+            return ["M", self.index] + self.Mprop 
         elif cmd == -2:
             if self.seq.count(-2) > 1:
                 raise NotImplementedError("Patterns with more than one X corrections are not supported")
@@ -1704,6 +1712,7 @@ def pauli_nodes(pattern):
 
     Parameters
     ----------
+
     pattern : graphix.Pattern object
 
     Returns
