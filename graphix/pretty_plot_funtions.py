@@ -79,7 +79,7 @@ def pretty_plot_pattern(pattern: graphix.Pattern, input_nodes : set):
     
     nx.set_node_attributes(g, layer_data['attribute_data'])
 
-    graph_params = {"with_labels": True, "node_size": 600, "node_color": get_clr_list(pattern), "edgecolors": "k"}
+    graph_params = {"with_labels": True, "node_size": 600, "node_color": 'w', "edgecolors": "k"}
     pos = nx.multipartite_layout(g, subset_key= 'layer', align='vertical', scale= 100)
 
     plt.figure(figsize=(25,16))
