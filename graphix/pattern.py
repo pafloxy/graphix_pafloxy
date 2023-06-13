@@ -57,6 +57,7 @@ class Pattern:
         self.results = {}  # measurement results from the graph state simulator
         self.output_nodes = output_nodes  # output nodes
         self.Nnode = width  # total number of nodes in the graph state
+        self.is_parameterized = False ## if the pattern has parameterized measurement commands @pafloxy
 
     def add(self, cmd):
         """add command to the end of the pattern.
@@ -95,6 +96,8 @@ class Pattern:
             self.output_nodes.append(cmd[1])
         elif cmd[0] == "M":
             self.output_nodes.remove(cmd[1])
+            if not isinstance(cmd[3], float):
+                self.is_parameterized = True
         self.seq.append(cmd)
 
     def set_output_nodes(self, output_nodes):
