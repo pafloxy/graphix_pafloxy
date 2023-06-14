@@ -93,12 +93,20 @@ class Pattern:
         assert cmd[0] in ["N", "E", "M", "X", "Z", "S", "C"]
         if cmd[0] == "N":
             self.Nnode += 1
-            self.output_nodes.append(cmd[1])
+            # self.output_nodes.append(cmd[1]) 
         elif cmd[0] == "M":
-            self.output_nodes.remove(cmd[1])
+            # self.output_nodes.remove(cmd[1]) 
+            if cmd[1] in self.output_nodes:
+                raise ValueError(str(cmd[1]) + ' is an output node ' + str(self.output_nodes) + ' ,and cannot be measured')
             if not isinstance(cmd[3], float):
                 self.is_parameterized = True
+
         self.seq.append(cmd)
+    
+    def add_multiple_commands(self, cmd_list):
+
+        for cmd in cmd_list:
+            self.add(cmd)
 
     def set_output_nodes(self, output_nodes):
         """arrange the order of output_nodes.
@@ -110,7 +118,9 @@ class Pattern:
         """
         self.output_nodes = output_nodes
     
-
+    @property
+    def seq(self):
+        return self.seq
 
     def __repr__(self):
         return f"graphix.pattern.Pattern object with {len(self.seq)} commands and {self.width} output qubits"

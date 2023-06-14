@@ -9,6 +9,9 @@ from copy import deepcopy
 from graphix.pattern import Pattern
 from graphix.sim.statevec import Statevec
 
+from typing import Union
+
+from qiskit.circuit import ParameterExpression, Parameter 
 
 class Circuit:
     """Gate-to-MBQC transpiler.
@@ -32,6 +35,7 @@ class Circuit:
         """
         self.width = width
         self.instruction = []
+        self.is_paramterised = False
 
     def cnot(self, control, target):
         """CNOT gate
@@ -103,20 +107,22 @@ class Circuit:
         assert qubit in np.arange(self.width)
         self.instruction.append(["Z", qubit])
 
-    def rx(self, qubit, angle):
+    def rx(self, qubit, angle: Union[float, ParameterExpression]):
         """X rotation gate
 
         Prameters
         ---------
         qubit : int
             target qubit
-        angle : float
-            rotation angle in radian
+        angle : float / ParameterExpression
+            rotation angle in radian or parameter representing the angle
         """
         assert qubit in np.arange(self.width)
         self.instruction.append(["Rx", qubit, angle])
 
-    def ry(self, qubit, angle):
+        if not isinstance(angle, float): self.is_paramterised = True
+
+    def ry(self, qubit, angle: Union[float, ParameterExpression]):
         """Y rotation gate
 
         Prameters
@@ -124,12 +130,14 @@ class Circuit:
         qubit : int
             target qubit
         angle : float
-            angle in radian
+            angle in radian or parameter representing the angle
         """
         assert qubit in np.arange(self.width)
         self.instruction.append(["Ry", qubit, angle])
 
-    def rz(self, qubit, angle):
+        if not isinstance(angle, float): self.is_paramterised = True
+
+    def rz(self, qubit, angle: Union[float, ParameterExpression]):
         """Z rotation gate
 
         Prameters
@@ -137,12 +145,14 @@ class Circuit:
         qubit : int
             target qubit
         angle : float
-            rotation angle in radian
+            rotation angle in radian or parameter representing the angle
         """
         assert qubit in np.arange(self.width)
         self.instruction.append(["Rz", qubit, angle])
 
-    def rzz(self, control, target, angle):
+        if not isinstance(angle, float): self.is_paramterised = True
+        
+    def rzz(self, control, target, angle: Union[float, ParameterExpression]):
         r"""ZZ-rotation gate.
         Equivalent to the sequence
         CNOT(control, target),
@@ -157,11 +167,13 @@ class Circuit:
         qubit : int
             target qubit
         angle : float
-            rotation angle in radian
+            rotation angle in radian or parameter representing the angle
         """
         assert control in np.arange(self.width)
         assert target in np.arange(self.width)
         self.instruction.append(["Rzz", [control, target], angle])
+
+        if not isinstance(angle, float): self.is_paramterised = True
 
     def i(self, qubit):
         """identity (teleportation) gate
@@ -195,55 +207,55 @@ class Circuit:
                 out[instr[1][0]], out[instr[1][1]], seq = self._cnot_command(
                     out[instr[1][0]], out[instr[1][1]], ancilla
                 )
-                pattern.seq.extend(seq)
+                pattern.add(seq)
                 Nnode += 2
             elif instr[0] == "I":
                 pass
             elif instr[0] == "H":
                 ancilla = Nnode
                 out[instr[1]], seq = self._h_command(out[instr[1]], ancilla)
-                pattern.seq.extend(seq)
+                pattern.add(seq)
                 Nnode += 1
             elif instr[0] == "S":
                 ancilla = [Nnode, Nnode + 1]
                 out[instr[1]], seq = self._s_command(out[instr[1]], ancilla)
-                pattern.seq.extend(seq)
+                pattern.add(seq)
                 Nnode += 2
             elif instr[0] == "X":
                 ancilla = [Nnode, Nnode + 1]
                 out[instr[1]], seq = self._x_command(out[instr[1]], ancilla)
-                pattern.seq.extend(seq)
+                pattern.add(seq)
                 Nnode += 2
             elif instr[0] == "Y":
                 ancilla = [Nnode, Nnode + 1, Nnode + 2, Nnode + 3]
                 out[instr[1]], seq = self._y_command(out[instr[1]], ancilla)
-                pattern.seq.extend(seq)
+                pattern.add(seq)
                 Nnode += 4
             elif instr[0] == "Z":
                 ancilla = [Nnode, Nnode + 1]
                 out[instr[1]], seq = self._z_command(out[instr[1]], ancilla)
-                pattern.seq.extend(seq)
+                pattern.add(seq)
                 Nnode += 2
             elif instr[0] == "Rx":
                 ancilla = [Nnode, Nnode + 1]
                 out[instr[1]], seq = self._rx_command(out[instr[1]], ancilla, instr[2])
-                pattern.seq.extend(seq)
+                pattern.add(seq)
                 Nnode += 2
             elif instr[0] == "Ry":
                 ancilla = [Nnode, Nnode + 1, Nnode + 2, Nnode + 3]
                 out[instr[1]], seq = self._ry_command(out[instr[1]], ancilla, instr[2])
-                pattern.seq.extend(seq)
+                pattern.add(seq)
                 Nnode += 4
             elif instr[0] == "Rz":
                 if opt:
                     ancilla = Nnode
                     out[instr[1]], seq = self._rz_command_opt(out[instr[1]], ancilla, instr[2])
-                    pattern.seq.extend(seq)
+                    pattern.add(seq)
                     Nnode += 1
                 else:
                     ancilla = [Nnode, Nnode + 1]
                     out[instr[1]], seq = self._rz_command(out[instr[1]], ancilla, instr[2])
-                    pattern.seq.extend(seq)
+                    pattern.add(seq)
                     Nnode += 2
             elif instr[0] == "Rzz":
                 if opt:
@@ -251,7 +263,7 @@ class Circuit:
                     out[instr[1][0]], out[instr[1][1]], seq = self._rzz_command_opt(
                         out[instr[1][0]], out[instr[1][1]], ancilla, instr[2]
                     )
-                    pattern.seq.extend(seq)
+                    pattern.add(seq)
                     Nnode += 1
                 else:
                     raise NotImplementedError(
@@ -454,7 +466,9 @@ class Circuit:
         pattern = Pattern(self.width)
         pattern.output_nodes = out
         pattern.Nnode = Nnode
-        pattern.seq = command_seq
+        # pattern.seq = command_seq
+        pattern.add_multiple_commands(command_seq)
+        
         return pattern
 
     def _commute_with_cnot(self, target):
@@ -988,7 +1002,8 @@ class Circuit:
             state = Statevec(nqubit=self.width)
         else:
             state = input_state
-
+        
+        if self.is_paramterised : raise FutureWarning('The circuit has unassigned parameters, all class methods from graphix.Statevec might not work on output')
         for i in range(len(self.instruction)):
             if self.instruction[i][0] == "CNOT":
                 state.CNOT((self.instruction[i][1][0], self.instruction[i][1][1]))
