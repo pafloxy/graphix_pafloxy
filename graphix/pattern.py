@@ -14,6 +14,7 @@ from graphix.clifford import (
 )
 from copy import deepcopy
 
+from qiskit.circuit import Parameter, ParameterExpression
 
 class Pattern:
     """
@@ -57,7 +58,7 @@ class Pattern:
         self.results = {}  # measurement results from the graph state simulator
         self.output_nodes = output_nodes  # output nodes
         self.Nnode = width  # total number of nodes in the graph state
-        self.is_parameterized = False ## if the pattern has parameterized measurement commands @pafloxy
+        self.num_parameterized_measurements = 0 ## if the pattern has parameterized measurement commands @pafloxy
 
     def add(self, cmd):
         """add command to the end of the pattern.
@@ -98,8 +99,8 @@ class Pattern:
             # self.output_nodes.remove(cmd[1]) 
             if cmd[1] in self.output_nodes:
                 raise ValueError(str(cmd[1]) + ' is an output node ' + str(self.output_nodes) + ' ,and cannot be measured')
-            if not isinstance(cmd[3], float):
-                self.is_parameterized = True
+            if not isinstance(cmd[3], (float, int)):
+                self.num_parameterized_measurements += 1
 
         self.seq.append(cmd)
     
@@ -107,6 +108,64 @@ class Pattern:
 
         for cmd in cmd_list:
             self.add(cmd)
+    
+    # @property
+    def seq(self):
+        return self.seq
+    # @property
+    def num_parameterized_measurements(self):
+        return self.num_parameterized_measurements
+    # @property
+    def is_parameterized(self):
+        if self.num_parameterized_measurements > 0 :
+            return True
+        else: 
+            return False
+    
+    def check_parameterized_commands(self, store_data:bool = True, return_data:bool= False):
+        
+        meas_cmds = self.get_measurement_commands()
+        param_meas_cmds = []; params = set()
+        if self.is_parameterized :
+            for cmd in meas_cmds:
+                if not isinstance(cmd[3], (float,int)):
+                    param_meas_cmds.append({cmd[1]: cmd[3]})
+                    params = params.union(cmd[3].parameters)
+        
+        if len(params) == 0: self.is_parameterized = False
+
+        if store_data: 
+            self.parameterised_commands = param_meas_cmds
+            self.parameters = params
+        
+        if return_data:
+            return  param_meas_cmds, params
+
+
+    def assign_parameters(self, parameter_assignment: dict, verbose: bool= True):
+
+        if not self.is_parameterized :
+            raise ValueError(" no paramaters to assign ")
+        
+        for cmd in self.seq :
+
+            if cmd[0] == 'M' and isinstance(cmd[3], ParameterExpression):
+                cmd[3] = float(cmd[3].bind(parameter_assignment, allow_unknown_parameters= True))
+        
+
+        self.check_parameterized_commands()
+
+        if verbose:
+            
+            if len(self.parameters) == 0 : print("all parameter values assigned")
+
+            else : 
+                print(" unassigned parameters in commands ")
+                print(" Commands :" + str(self.parameterised_commands) )
+                print(" Parameters : "+ str(self.parameters))
+
+        return
+
 
     def set_output_nodes(self, output_nodes):
         """arrange the order of output_nodes.
@@ -117,10 +176,6 @@ class Pattern:
             output nodes order determined by user. each index corresponds to that of logical qubits.
         """
         self.output_nodes = output_nodes
-    
-    @property
-    def seq(self):
-        return self.seq
 
     def __repr__(self):
         return f"graphix.pattern.Pattern object with {len(self.seq)} commands and {self.width} output qubits"
