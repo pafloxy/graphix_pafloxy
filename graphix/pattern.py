@@ -59,6 +59,7 @@ class Pattern:
         self.output_nodes = output_nodes  # output nodes
         self.Nnode = width  # total number of nodes in the graph state
         self.num_parameterized_measurements = 0 ## if the pattern has parameterized measurement commands @pafloxy
+        self.parameters = set()
 
     def add(self, cmd):
         """add command to the end of the pattern.
@@ -100,12 +101,16 @@ class Pattern:
             if cmd[1] in self.output_nodes:
                 raise ValueError(str(cmd[1]) + ' is an output node ' + str(self.output_nodes) + ' ,and cannot be measured')
             if not isinstance(cmd[3], (float, int)):
+                if self.num_parameterized_measurements == 0:
+                    self.parameterized_commands = []
+                    
                 self.num_parameterized_measurements += 1
+                self.parameterized_commands.append({cmd[1]: cmd[3]})
+                self.parameters = self.parameters.union(cmd[3].parameters)
 
         self.seq.append(cmd)
     
     def add_multiple_commands(self, cmd_list):
-
         for cmd in cmd_list:
             self.add(cmd)
     
@@ -122,7 +127,10 @@ class Pattern:
         else: 
             return False
     
-    def check_parameterized_commands(self, store_data:bool = True, return_data:bool= False):
+    def inspect_parameterized_commands(self, store_data:bool = True, return_data:bool= False):
+        
+        if self.num_parameterized_measurements == 0 :
+            raise ValueError(" no paramaters to assign ")
         
         meas_cmds = self.get_measurement_commands()
         param_meas_cmds = []; params = set()
@@ -135,37 +143,48 @@ class Pattern:
         if len(params) == 0: self.is_parameterized = False
 
         if store_data: 
-            self.parameterised_commands = param_meas_cmds
+            self.parameterized_commands = param_meas_cmds
             self.parameters = params
         
         if return_data:
             return  param_meas_cmds, params
 
 
-    def assign_parameters(self, parameter_assignment: dict, verbose: bool= True):
+    def assign_parameters(self, parameter_assignment: dict, verbose: bool= True, inplace: bool= True):
 
-        if not self.is_parameterized :
+        if self.num_parameterized_measurements == 0 :
             raise ValueError(" no paramaters to assign ")
         
-        for cmd in self.seq :
+        if inplace :
+            cmd_indx = -1
+            for cmd in self.seq :
+                cmd_indx += 1
+                if cmd[0] == 'M' and isinstance(cmd[3], ParameterExpression):
+                    cmd[3] = float(cmd[3].bind(parameter_assignment, allow_unknown_parameters= True))
+                    self.seq[cmd_indx] = cmd
 
-            if cmd[0] == 'M' and isinstance(cmd[3], ParameterExpression):
-                cmd[3] = float(cmd[3].bind(parameter_assignment, allow_unknown_parameters= True))
+            self.inspect_parameterized_commands()
         
+        else :
+            new_pattern = deepcopy(self)
+            cmd_indx = -1
+            for cmd in new_pattern.seq :
+                cmd_indx += 1
+                if cmd[0] == 'M' and isinstance(cmd[3], ParameterExpression):
+                    cmd[3] = float(cmd[3].bind(parameter_assignment, allow_unknown_parameters= True))
+                    new_pattern.seq[cmd_indx] = cmd
 
-        self.check_parameterized_commands()
-
+            return new_pattern
+      
         if verbose:
             
             if len(self.parameters) == 0 : print("all parameter values assigned")
 
             else : 
                 print(" unassigned parameters in commands ")
-                print(" Commands :" + str(self.parameterised_commands) )
+                print(" Commands :" + str(self.parameterized_commands) )
                 print(" Parameters : "+ str(self.parameters))
-
-        return
-
+        
 
     def set_output_nodes(self, output_nodes):
         """arrange the order of output_nodes.
