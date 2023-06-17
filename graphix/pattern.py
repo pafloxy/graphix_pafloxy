@@ -14,7 +14,10 @@ from graphix.clifford import (
 )
 from copy import deepcopy
 
-from qiskit.circuit import Parameter, ParameterExpression
+# from qiskit.circuit import Parameter, ParameterExpression, ParameterVector
+from graphix.parameterexpression import  ParameterExpression
+from graphix.parameter import Parameter
+
 
 class Pattern:
     """
@@ -58,7 +61,8 @@ class Pattern:
         self.results = {}  # measurement results from the graph state simulator
         self.output_nodes = output_nodes  # output nodes
         self.Nnode = width  # total number of nodes in the graph state
-        self.num_parameterized_measurements = 0 ## if the pattern has parameterized measurement commands @pafloxy
+        
+        self.num_parameterized_measurements = 0 ## for patterns with parameterized measurement commands
         self.parameters = set()
 
     def add(self, cmd):
@@ -110,37 +114,61 @@ class Pattern:
 
         self.seq.append(cmd)
     
-    def add_multiple_commands(self, cmd_list):
+    def add_multiple_commands(self, cmd_list: list):
+        """ append list of commands to the measurement pattern
+
+        Parameters
+        ----------
+
+        cmd_list : list
+                    a list of commands to be appended to the measurement pattern
+
+                    NOTE: commands are apppended via the Pattern.add() method and any 
+                          internal processing follows.                    
+        
+        
+        """
         for cmd in cmd_list:
             self.add(cmd)
-    
-    # @property
-    def seq(self):
-        return self.seq
-    # @property
-    def num_parameterized_measurements(self):
-        return self.num_parameterized_measurements
-    # @property
+
+    @property
     def is_parameterized(self):
+        """ returns True if pattern has measuremnt patterns, False otherwise
+    
+        """
         if self.num_parameterized_measurements > 0 :
             return True
         else: 
             return False
     
     def inspect_parameterized_commands(self, store_data:bool = True, return_data:bool= False):
+        """ method to summarize all parameterized measurements commands
+            informs user about all Parameterised Measurement Commands and the Parameter variables in the commands
+
+            Parameters
+            ----------
+            store_data : bool
+                        if True saves all information in respective class attribrutes
+            return_data : bool
+                        if True then returns
+
+                        list - of all parameterised measurements commands,
+                        set - of all the parameters used in the commands
+        
+        """
         
         if self.num_parameterized_measurements == 0 :
             raise ValueError(" no paramaters to assign ")
         
         meas_cmds = self.get_measurement_commands()
         param_meas_cmds = []; params = set()
-        if self.is_parameterized :
+        if self.num_parameterized_measurements > 0 :
             for cmd in meas_cmds:
                 if not isinstance(cmd[3], (float,int)):
                     param_meas_cmds.append({cmd[1]: cmd[3]})
                     params = params.union(cmd[3].parameters)
         
-        if len(params) == 0: self.is_parameterized = False
+        if len(params) == 0: self.num_parameterized_measurements = 0
 
         if store_data: 
             self.parameterized_commands = param_meas_cmds
@@ -151,6 +179,18 @@ class Pattern:
 
 
     def assign_parameters(self, parameter_assignment: dict, verbose: bool= True, inplace: bool= True):
+        """ assign numerical values to the parameters in the measurement commands
+
+            Parameters
+            ----------
+            parameter_assignment : dict
+                                dictionary with parameters as keys and numerical assignments as values. eg {param_1: 0.3, params_2: 0.5, ..}
+            verbose  : bool
+                        if True prints status of all assigned and unassigned meaurement parameters
+            inplace : bool 
+                        if True, assigns paramters to the current pattern, otherwise returns a new Pattern with measuremnt parameter assigned. 
+        
+        """
 
         if self.num_parameterized_measurements == 0 :
             raise ValueError(" no paramaters to assign ")

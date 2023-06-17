@@ -11,7 +11,9 @@ from graphix.sim.statevec import Statevec
 
 from typing import Union
 
-from qiskit.circuit import ParameterExpression, Parameter 
+# from qiskit.circuit import Parameter, ParameterExpression, ParameterVector
+from graphix.parameterexpression import  ParameterExpression
+from graphix.parameter import Parameter
 
 class Circuit:
     """Gate-to-MBQC transpiler.
@@ -35,12 +37,25 @@ class Circuit:
         """
         self.width = width
         self.instruction = []
-        self.num_parameterized_gates = 0
+        
+        self.num_parameterized_gates = 0  ## for circuits with parameterized gates
         self.parameters = set()
        
     
     def inspect_parameterized_gatess(self, store_data:bool = True, return_data:bool = False):
+        """ method to summarize all parameterized gate instructions
+            informs user about all Parameter variables in the circuit
 
+            Parameters
+            ----------
+            store_data : bool
+                        if True saves all information in respective class attribrutes
+            return_data : bool
+                        if True then returns
+                        set - of all the parameters used in the circuit
+        
+        """
+        
         if self.num_parameterized_gates == 0 :
             raise ValueError(" no paramaters to assign ")
         
@@ -62,6 +77,18 @@ class Circuit:
                 return parameters
     
     def assign_parameters(self, parameter_assignment: dict, verbose: bool= True, inplace: bool= True):
+        """ assign numerical values to the parameters in the measurement commands
+
+            Parameters
+            ----------
+            parameter_assignment : dict
+                                dictionary with parameters as keys and numerical assignments as values. eg {param_1: 0.3, params_2: 0.5, ..}
+            verbose  : bool
+                        if True prints status of all assigned and unassigned gate parameters
+            inplace : bool 
+                        if True, assigns paramters to the current circuit, otherwise returns a new Circuit with gate parameters assigned. 
+        
+        """
 
         if self.num_parameterized_gates == 0 :
             raise ValueError(" no paramaters to assign ")
@@ -99,13 +126,11 @@ class Circuit:
 
             else : 
                 print(" unassigned parameters in commands ")
-                print(" Commands :" + str(self.parameterized_commands) )
+                # print(" Commands :" + str(self.parameterized_commands) )
                 print(" Parameters : "+ str(self.parameters))
     
-    # @property
-    def num_parameterized_gates(self):
-        return self.num_parameterized_gates
-    # @property
+
+    @property
     def is_parameterized(self):
         if self.num_parameterized_gates > 0 :
             return True
