@@ -42,7 +42,7 @@ class Circuit:
         self.parameters = set()
        
     
-    def inspect_parameterized_gatess(self, store_data:bool = True, return_data:bool = False):
+    def inspect_parameterized_gates(self, store_data:bool = True, return_data:bool = False):
         """ method to summarize all parameterized gate instructions
             informs user about all Parameter variables in the circuit
 
@@ -104,7 +104,7 @@ class Circuit:
                     gate_instr[-1] = float(gate_instr[-1].bind(parameter_assignment, allow_unknown_parameters= True))
                     self.instruction[gate_indx] = gate_instr
         
-            self.inspect_parameterized_gatess()
+            self.inspect_parameterized_gates()
         
         else :
 
@@ -117,7 +117,8 @@ class Circuit:
                     gate_instr[-1] = float(gate_instr[-1].bind(parameter_assignment, allow_unknown_parameters= True))
                     new_pattern.instruction[gate_indx] = gate_instr
         
-            new_pattern.inspect_parameterized_gatess()            
+            new_pattern.inspect_parameterized_gates()            
+            
             return new_pattern
       
         if verbose:

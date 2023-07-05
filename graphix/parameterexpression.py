@@ -288,49 +288,49 @@ class ParameterExpression:
 
         return out_expr
 
-    # def gradient(self, param) -> Union["ParameterExpression", complex]:
-    #     """Get the derivative of a parameter expression w.r.t. a specified parameter expression.
+    def gradient(self, param) -> Union["ParameterExpression", complex]:
+        """Get the derivative of a parameter expression w.r.t. a specified parameter expression.
 
-    #     Args:
-    #         param (Parameter): Parameter w.r.t. which we want to take the derivative
+        Args:
+            param (Parameter): Parameter w.r.t. which we want to take the derivative
 
-    #     Returns:
-    #         ParameterExpression representing the gradient of param_expr w.r.t. param
-    #         or complex or float number
-    #     """
-    #     # Check if the parameter is contained in the parameter expression
-    #     if param not in self._parameter_symbols.keys():
-    #         # If it is not contained then return 0
-    #         return 0.0
+        Returns:
+            ParameterExpression representing the gradient of param_expr w.r.t. param
+            or complex or float number
+        """
+        # Check if the parameter is contained in the parameter expression
+        if param not in self._parameter_symbols.keys():
+            # If it is not contained then return 0
+            return 0.0
 
-    #     # Compute the gradient of the parameter expression w.r.t. param
-    #     key = self._parameter_symbols[param]
-    #     if _optionals.HAS_SYMENGINE:
-    #         import symengine
+        # Compute the gradient of the parameter expression w.r.t. param
+        key = self._parameter_symbols[param]
+        # if _optionals.HAS_SYMENGINE:
+        #     import symengine
 
-    #         expr_grad = symengine.Derivative(self._symbol_expr, key)
-    #     else:
-    #         # TODO enable nth derivative
-    #         from sympy import Derivative
+        #     expr_grad = symengine.Derivative(self._symbol_expr, key)
+        # else:
+        #     # TODO enable nth derivative
+        from sympy import Derivative
 
-    #         expr_grad = Derivative(self._symbol_expr, key).doit()
+        expr_grad = Derivative(self._symbol_expr, key).doit()
 
-    #     # generate the new dictionary of symbols
-    #     # this needs to be done since in the derivative some symbols might disappear (e.g.
-    #     # when deriving linear expression)
-    #     parameter_symbols = {}
-    #     for parameter, symbol in self._parameter_symbols.items():
-    #         if symbol in expr_grad.free_symbols:
-    #             parameter_symbols[parameter] = symbol
-    #     # If the gradient corresponds to a parameter expression then return the new expression.
-    #     if len(parameter_symbols) > 0:
-    #         return ParameterExpression(parameter_symbols, expr=expr_grad)
-    #     # If no free symbols left, return a complex or float gradient
-    #     expr_grad_cplx = complex(expr_grad)
-    #     if expr_grad_cplx.imag != 0:
-    #         return expr_grad_cplx
-    #     else:
-    #         return float(expr_grad)
+        # generate the new dictionary of symbols
+        # this needs to be done since in the derivative some symbols might disappear (e.g.
+        # when deriving linear expression)
+        parameter_symbols = {}
+        for parameter, symbol in self._parameter_symbols.items():
+            if symbol in expr_grad.free_symbols:
+                parameter_symbols[parameter] = symbol
+        # If the gradient corresponds to a parameter expression then return the new expression.
+        if len(parameter_symbols) > 0:
+            return ParameterExpression(parameter_symbols, expr=expr_grad)
+        # If no free symbols left, return a complex or float gradient
+        expr_grad_cplx = complex(expr_grad)
+        if expr_grad_cplx.imag != 0:
+            return expr_grad_cplx
+        else:
+            return float(expr_grad)
 
     def __add__(self, other):
         return self._apply_operation(operator.add, other)
@@ -364,16 +364,16 @@ class ParameterExpression:
     def _call(self, ufunc):
         return ParameterExpression(self._parameter_symbols, ufunc(self._symbol_expr))
 
-    # def sin(self):
-    #     """Sine of a ParameterExpression"""
-    #     if _optionals.HAS_SYMENGINE:
-    #         import symengine
+    def sin(self):
+        """Sine of a ParameterExpression"""
+        # if _optionals.HAS_SYMENGINE:
+        #     import symengine
 
-    #         return self._call(symengine.sin)
-    #     else:
-    #         from sympy import sin as _sin
+        #     return self._call(symengine.sin)
+        # else:
+        from sympy import sin as _sin
 
-    #         return self._call(_sin)
+        return self._call(_sin)
 
     # def cos(self):
     #     """Cosine of a ParameterExpression"""
