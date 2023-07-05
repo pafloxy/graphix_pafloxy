@@ -11,8 +11,6 @@ from graphix.sim.statevec import Statevec
 
 from typing import Union
 
-# from qiskit.circuit import Parameter, ParameterExpression, ParameterVector
-from graphix.parameterexpression import  ParameterExpression
 from graphix.parameter import Parameter
 
 class Circuit:
@@ -100,8 +98,9 @@ class Circuit:
             for gate_indx in parameterized_gate_indx :
                 
                 gate_instr = self.instruction[gate_indx]
-                if isinstance(gate_instr[-1], (Parameter, ParameterExpression)):
-                    gate_instr[-1] = float(gate_instr[-1].bind(parameter_assignment, allow_unknown_parameters= True))
+                if isinstance(gate_instr[-1], (Parameter)):
+                    gate_instr[-1] = gate_instr[-1].bind(parameter_assignment, allow_unknown_parameters= True).value
+                    print(gate_instr) ##checkflag
                     self.instruction[gate_indx] = gate_instr
         
             self.inspect_parameterized_gates()
@@ -113,8 +112,8 @@ class Circuit:
             for gate_indx in parameterized_gate_indx :
                 
                 gate_instr = new_pattern.instruction[gate_indx]
-                if isinstance(gate_instr[-1], (Parameter, ParameterExpression)):
-                    gate_instr[-1] = float(gate_instr[-1].bind(parameter_assignment, allow_unknown_parameters= True))
+                if isinstance(gate_instr[-1], (Parameter)):
+                    gate_instr[-1] = gate_instr[-1].bind(parameter_assignment, allow_unknown_parameters= True).value
                     new_pattern.instruction[gate_indx] = gate_instr
         
             new_pattern.inspect_parameterized_gates()            
@@ -133,12 +132,7 @@ class Circuit:
 
     @property
     def is_parameterized(self):
-        if self.num_parameterized_gates > 0 :
-            return True
-        else: 
-            return False
-    
-
+        return self.num_parameterized_gates > 0 
 
     def cnot(self, control, target):
         """CNOT gate
@@ -210,14 +204,14 @@ class Circuit:
         assert qubit in np.arange(self.width)
         self.instruction.append(["Z", qubit])
 
-    def rx(self, qubit, angle: Union[float, ParameterExpression]):
+    def rx(self, qubit, angle: Union[float, Parameter]):
         """X rotation gate
 
         Prameters
         ---------
         qubit : int
             target qubit
-        angle : float / ParameterExpression
+        angle : float / Parameter
             rotation angle in radian or parameter representing the angle
         """
         assert qubit in np.arange(self.width)
@@ -229,7 +223,7 @@ class Circuit:
             self.parameters = self.parameters.union(angle.parameters)
 
 
-    def ry(self, qubit, angle: Union[float, ParameterExpression]):
+    def ry(self, qubit, angle: Union[float, Parameter]):
         """Y rotation gate
 
         Prameters
@@ -248,7 +242,7 @@ class Circuit:
             self.parameters = self.parameters.union(angle.parameters)
 
 
-    def rz(self, qubit, angle: Union[float, ParameterExpression]):
+    def rz(self, qubit, angle: Union[float, Parameter]):
         """Z rotation gate
 
         Prameters
@@ -267,7 +261,7 @@ class Circuit:
             self.parameters = self.parameters.union(angle.parameters)
 
         
-    def rzz(self, control, target, angle: Union[float, ParameterExpression]):
+    def rzz(self, control, target, angle: Union[float, Parameter]):
         r"""ZZ-rotation gate.
         Equivalent to the sequence
         CNOT(control, target),

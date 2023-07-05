@@ -14,8 +14,6 @@ from graphix.clifford import (
 )
 from copy import deepcopy
 
-# from qiskit.circuit import Parameter, ParameterExpression, ParameterVector
-from graphix.parameterexpression import  ParameterExpression
 from graphix.parameter import Parameter
 
 
@@ -199,8 +197,8 @@ class Pattern:
             cmd_indx = -1
             for cmd in self.seq :
                 cmd_indx += 1
-                if cmd[0] == 'M' and isinstance(cmd[3], ParameterExpression):
-                    cmd[3] = float(cmd[3].bind(parameter_assignment, allow_unknown_parameters= True))
+                if cmd[0] == 'M' and isinstance(cmd[3], Parameter):
+                    cmd[3] = cmd[3].bind(parameter_assignment, allow_unknown_parameters= True).value
                     self.seq[cmd_indx] = cmd
 
             self.inspect_parameterized_commands()
@@ -210,8 +208,8 @@ class Pattern:
             cmd_indx = -1
             for cmd in new_pattern.seq :
                 cmd_indx += 1
-                if cmd[0] == 'M' and isinstance(cmd[3], ParameterExpression):
-                    cmd[3] = float(cmd[3].bind(parameter_assignment, allow_unknown_parameters= True))
+                if cmd[0] == 'M' and isinstance(cmd[3], Parameter):
+                    cmd[3] = cmd[3].bind(parameter_assignment, allow_unknown_parameters= True).value
                     new_pattern.seq[cmd_indx] = cmd
 
             return new_pattern
