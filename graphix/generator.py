@@ -9,7 +9,7 @@ from graphix.pattern import Pattern
 from graphix.gflow import flow, gflow, get_layers, find_odd_neighbor
 
 
-def generate_from_graph(graph, angles, inputs, outputs, meas_planes):
+def generate_from_graph(graph, angles, inputs, outputs, meas_planes=None):
     r"""Generate the measurement pattern from open graph and measurement angles.
 
     This function takes an open graph G = (nodes, edges, input, outputs),
@@ -44,7 +44,7 @@ def generate_from_graph(graph, angles, inputs, outputs, meas_planes):
         list of node indices for input nodes
     outputs : list
         list of node indices for output nodes
-    meas_planes : dict
+    meas_planes : dict(optional)
         measurement planes for each nodes on the graph, except output nodes
 
     Returns
@@ -55,12 +55,15 @@ def generate_from_graph(graph, angles, inputs, outputs, meas_planes):
     assert len(inputs) == len(outputs)
     measuring_nodes = list(set(graph.nodes) - set(outputs) - set(inputs))
 
+    if meas_planes is None:
+        meas_planes = {i: "XY" for i in measuring_nodes}
+
     # search for flow first
     f, l_k = flow(graph, set(inputs), set(outputs), meas_planes=meas_planes)
     if f:
         # flow found
         depth, layers = get_layers(l_k)
-        pattern = Pattern(len(inputs))
+        pattern = Pattern(input_nodes=inputs, output_nodes=outputs, width=len(inputs))
         pattern.seq = [["N", i] for i in inputs]
         for i in set(graph.nodes) - set(inputs):
             pattern.seq.append(["N", i])
@@ -75,7 +78,6 @@ def generate_from_graph(graph, angles, inputs, outputs, meas_planes):
                     if k not in measured:
                         pattern.seq.append(["Z", k, [j]])
                 pattern.seq.append(["X", f[j], [j]])
-        pattern.output_nodes = outputs
         pattern.Nnode = len(graph.nodes)
     else:
         # no flow found - we try gflow
@@ -83,7 +85,7 @@ def generate_from_graph(graph, angles, inputs, outputs, meas_planes):
         if g:
             # gflow found
             depth, layers = get_layers(l_k)
-            pattern = Pattern(len(inputs))
+            pattern = Pattern(input_nodes=inputs, output_nodes=outputs, width=len(inputs))
             pattern.seq = [["N", i] for i in inputs]
             for i in set(graph.nodes) - set(inputs):
                 pattern.seq.append(["N", i])
@@ -99,7 +101,6 @@ def generate_from_graph(graph, angles, inputs, outputs, meas_planes):
                         pattern.seq.append(["Z", k, [j]])
                     for k in set(g[j]) - set([j]):
                         pattern.seq.append(["X", k, [j]])
-            pattern.output_nodes = outputs
             pattern.Nnode = len(graph.nodes)
         else:
             raise ValueError("no flow or gflow found")

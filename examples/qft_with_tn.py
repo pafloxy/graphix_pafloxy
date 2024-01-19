@@ -1,6 +1,6 @@
 """
 Large-scale simulations with tensor network simulator
-===================
+=====================================================
 
 In this example, we demonstrate simulation of MBQC involving 10k+ nodes.
 
@@ -14,7 +14,6 @@ Firstly, let us import relevant modules and define the circuit:
 # %%
 import numpy as np
 from graphix import Circuit
-import networkx as nx
 
 
 def cp(circuit, theta, control, target):
@@ -25,12 +24,6 @@ def cp(circuit, theta, control, target):
     circuit.cnot(control, target)
 
 
-def swap(circuit, a, b):
-    circuit.cnot(a, b)
-    circuit.cnot(b, a)
-    circuit.cnot(a, b)
-
-
 def qft_rotations(circuit, n):
     circuit.h(n)
     for qubit in range(n + 1, circuit.width):
@@ -39,7 +32,7 @@ def qft_rotations(circuit, n):
 
 def swap_registers(circuit, n):
     for qubit in range(n // 2):
-        swap(circuit, qubit, n - qubit - 1)
+        circuit.swap(qubit, n - qubit - 1)
     return circuit
 
 
@@ -50,9 +43,9 @@ def qft(circuit, n):
 
 
 # %%
-# We will simulate 45-qubit QFT, which requires graph states with more than 10000 nodes.
+# We will simulate 55-qubit QFT, which requires graph states with more than 10000 nodes.
 
-n = 45
+n = 55
 print("{}-qubit QFT".format(n))
 circuit = Circuit(n)
 
@@ -61,7 +54,7 @@ for i in range(n):
 qft(circuit, n)
 
 # standardize pattern
-pattern = circuit.transpile()
+pattern = circuit.transpile(opt=True)
 pattern.standardize()
 pattern.shift_signals()
 nodes, edges = pattern.get_graph()
@@ -71,7 +64,7 @@ print(f"Number of edges: {len(edges)}")
 # %%
 # Using efficient graph state simulator `graphix.GraphSim`, we can classically preprocess Pauli measurements.
 # We are currently improving the speed of this process by using rust-based graph manipulation backend.
-pattern.perform_pauli_measurements()
+pattern.perform_pauli_measurements(use_rustworkx=True)
 
 
 # %%
@@ -81,7 +74,8 @@ pattern.perform_pauli_measurements()
 # To specify TN backend of the simulation, simply provide as a keyword argument.
 # here we do a very basic check that one of the statevector amplitudes is what it is expected to be:
 
-import time
+import time  # noqa: E402
+
 t1 = time.time()
 tn = pattern.simulate_pattern(backend="tensornetwork")
 value = tn.get_basis_amplitude(0)
@@ -89,3 +83,5 @@ t2 = time.time()
 print("amplitude of |00...0> is ", value)
 print("1/2^n (true answer) is", 1 / 2**n)
 print("approximate execution time in seconds: ", t2 - t1)
+
+# %%

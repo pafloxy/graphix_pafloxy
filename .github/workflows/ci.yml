@@ -16,7 +16,7 @@ jobs:
       fail-fast: false
       matrix:
         os: ['ubuntu-latest', 'windows-2022', 'macos-latest']
-        python: ['3.8', '3.9', '3.10']
+        python: ['3.8', '3.9', '3.10', '3.11']
 
     name: "Python ${{ matrix.python }} / ${{ matrix.os }}"
     runs-on: ${{ matrix.os }}
@@ -25,21 +25,15 @@ jobs:
     - uses: actions/checkout@v3
 
     - name: Set up Python ${{ matrix.python }}
-      uses: actions/setup-python@v3
+      uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python }}
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install pytest
-        pip install -r requirements.txt
-        pip install -e .[test]
+    - name: Upgrade pip
+      run: python -m pip install --upgrade pip
 
-    - name: Install graphix
-      run: |
-        python setup.py install
+    - name: Install tox
+      run: pip install tox tox-gh-actions
 
-    - name: Test with pytest
-      run: |
-        python -m pytest
+    - name: Run tox
+      run: tox

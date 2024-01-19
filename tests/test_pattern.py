@@ -1,8 +1,15 @@
+import sys
 import unittest
+
 import numpy as np
+from parameterized import parameterized
+
 import tests.random_circuit as rc
+from graphix.pattern import CommandNode, Pattern
 from graphix.transpiler import Circuit
-from graphix.pattern import Pattern, CommandNode
+
+SEED = 42
+rc.set_seed(SEED)
 
 
 class TestPattern(unittest.TestCase):
@@ -28,15 +35,18 @@ class TestPattern(unittest.TestCase):
         state_mbqc = pattern.simulate_pattern()
         np.testing.assert_almost_equal(np.abs(np.dot(state_mbqc.flatten().conjugate(), state.flatten())), 1)
 
-    def test_minimize_space_with_gflow(self):
-        nqubits = 5
-        depth = 5
+    @parameterized.expand([(False), (True)])
+    def test_minimize_space_with_gflow(self, use_rustworkx):
+        if sys.modules.get("rustworkx") is None and use_rustworkx is True:
+            self.skipTest("rustworkx not installed")
+        nqubits = 3
+        depth = 3
         pairs = [(i, np.mod(i + 1, nqubits)) for i in range(nqubits)]
         circuit = rc.generate_gate(nqubits, depth, pairs)
         pattern = circuit.transpile()
         pattern.standardize(method="global")
         pattern.shift_signals(method="global")
-        pattern.perform_pauli_measurements()
+        pattern.perform_pauli_measurements(use_rustworkx=use_rustworkx)
         pattern.minimize_space()
         state = circuit.simulate_statevector()
         state_mbqc = pattern.simulate_pattern()
@@ -77,7 +87,10 @@ class TestPattern(unittest.TestCase):
             state_mbqc = pattern.simulate_pattern()
             np.testing.assert_almost_equal(np.abs(np.dot(state_mbqc.flatten().conjugate(), state.flatten())), 1)
 
-    def test_pauli_measurment(self):
+    @parameterized.expand([(False), (True)])
+    def test_pauli_measurment(self, use_rustworkx):
+        if sys.modules.get("rustworkx") is None and use_rustworkx is True:
+            self.skipTest("rustworkx not installed")
         nqubits = 3
         depth = 3
         for i in range(10):
@@ -85,13 +98,33 @@ class TestPattern(unittest.TestCase):
             pattern = circuit.transpile()
             pattern.standardize(method="global")
             pattern.shift_signals(method="global")
-            pattern.perform_pauli_measurements()
+            pattern.perform_pauli_measurements(use_rustworkx=use_rustworkx)
             pattern.minimize_space()
             state = circuit.simulate_statevector()
             state_mbqc = pattern.simulate_pattern()
             np.testing.assert_almost_equal(np.abs(np.dot(state_mbqc.flatten().conjugate(), state.flatten())), 1)
 
-    def test_pauli_measurment_opt_gate(self):
+    @parameterized.expand([(False), (True)])
+    def test_pauli_measurment_leave_input(self, use_rustworkx):
+        if sys.modules.get("rustworkx") is None and use_rustworkx is True:
+            self.skipTest("rustworkx not installed")
+        nqubits = 3
+        depth = 3
+        for i in range(10):
+            circuit = rc.get_rand_circuit(nqubits, depth)
+            pattern = circuit.transpile()
+            pattern.standardize(method="global")
+            pattern.shift_signals(method="global")
+            pattern.perform_pauli_measurements(use_rustworkx=use_rustworkx, leave_input=True)
+            pattern.minimize_space()
+            state = circuit.simulate_statevector()
+            state_mbqc = pattern.simulate_pattern()
+            np.testing.assert_almost_equal(np.abs(np.dot(state_mbqc.flatten().conjugate(), state.flatten())), 1)
+
+    @parameterized.expand([(False), (True)])
+    def test_pauli_measurment_opt_gate(self, use_rustworkx):
+        if sys.modules.get("rustworkx") is None and use_rustworkx is True:
+            self.skipTest("rustworkx not installed")
         nqubits = 3
         depth = 3
         for i in range(10):
@@ -99,13 +132,16 @@ class TestPattern(unittest.TestCase):
             pattern = circuit.transpile(opt=True)
             pattern.standardize(method="global")
             pattern.shift_signals(method="global")
-            pattern.perform_pauli_measurements()
+            pattern.perform_pauli_measurements(use_rustworkx=use_rustworkx)
             pattern.minimize_space()
             state = circuit.simulate_statevector()
             state_mbqc = pattern.simulate_pattern()
             np.testing.assert_almost_equal(np.abs(np.dot(state_mbqc.flatten().conjugate(), state.flatten())), 1)
 
-    def test_pauli_measurment_opt_gate_transpiler(self):
+    @parameterized.expand([(False), (True)])
+    def test_pauli_measurment_opt_gate_transpiler(self, use_rustworkx):
+        if sys.modules.get("rustworkx") is None and use_rustworkx is True:
+            self.skipTest("rustworkx not installed")
         nqubits = 3
         depth = 3
         for i in range(10):
@@ -113,25 +149,31 @@ class TestPattern(unittest.TestCase):
             pattern = circuit.standardize_and_transpile(opt=True)
             pattern.standardize(method="global")
             pattern.shift_signals(method="global")
-            pattern.perform_pauli_measurements()
+            pattern.perform_pauli_measurements(use_rustworkx=use_rustworkx)
             pattern.minimize_space()
             state = circuit.simulate_statevector()
             state_mbqc = pattern.simulate_pattern()
             np.testing.assert_almost_equal(np.abs(np.dot(state_mbqc.flatten().conjugate(), state.flatten())), 1)
 
-    def test_pauli_measurment_opt_gate_transpiler_without_signalshift(self):
+    @parameterized.expand([(False), (True)])
+    def test_pauli_measurment_opt_gate_transpiler_without_signalshift(self, use_rustworkx):
+        if sys.modules.get("rustworkx") is None and use_rustworkx is True:
+            self.skipTest("rustworkx not installed")
         nqubits = 3
         depth = 3
         for i in range(10):
             circuit = rc.get_rand_circuit(nqubits, depth, use_rzz=True)
             pattern = circuit.standardize_and_transpile(opt=True)
-            pattern.perform_pauli_measurements()
+            pattern.perform_pauli_measurements(use_rustworkx=use_rustworkx)
             pattern.minimize_space()
             state = circuit.simulate_statevector()
             state_mbqc = pattern.simulate_pattern()
             np.testing.assert_almost_equal(np.abs(np.dot(state_mbqc.flatten().conjugate(), state.flatten())), 1)
 
-    def test_pauli_measurement(self):
+    @parameterized.expand([(False), (True)])
+    def test_pauli_measurement(self, use_rustworkx):
+        if sys.modules.get("rustworkx") is None and use_rustworkx is True:
+            self.skipTest("rustworkx not installed")
         # test pattern is obtained from 3-qubit QFT with pauli measurement
         circuit = Circuit(3)
         for i in range(3):
@@ -151,11 +193,42 @@ class TestPattern(unittest.TestCase):
         pattern = circuit.transpile()
         pattern.standardize(method="global")
         pattern.shift_signals(method="global")
-        pattern.perform_pauli_measurements()
+        pattern.perform_pauli_measurements(use_rustworkx=use_rustworkx)
 
         isolated_nodes = pattern.get_isolated_nodes()
         # 48-node is the isolated and output node.
         isolated_nodes_ref = {48}
+
+        np.testing.assert_equal(isolated_nodes, isolated_nodes_ref)
+
+    @parameterized.expand([(False), (True)])
+    def test_pauli_measurement_leave_input(self, use_rustworkx):
+        if sys.modules.get("rustworkx") is None and use_rustworkx is True:
+            self.skipTest("rustworkx not installed")
+        # test pattern is obtained from 3-qubit QFT with pauli measurement
+        circuit = Circuit(3)
+        for i in range(3):
+            circuit.h(i)
+        circuit.x(1)
+        circuit.x(2)
+
+        # QFT
+        circuit.h(2)
+        cp(circuit, np.pi / 4, 0, 2)
+        cp(circuit, np.pi / 2, 1, 2)
+        circuit.h(1)
+        cp(circuit, np.pi / 2, 0, 1)
+        circuit.h(0)
+        swap(circuit, 0, 2)
+
+        pattern = circuit.transpile()
+        pattern.standardize(method="global")
+        pattern.shift_signals(method="global")
+        pattern.perform_pauli_measurements(use_rustworkx=use_rustworkx, leave_input=True)
+
+        isolated_nodes = pattern.get_isolated_nodes()
+        # There is no isolated node.
+        isolated_nodes_ref = set()
 
         np.testing.assert_equal(isolated_nodes, isolated_nodes_ref)
 

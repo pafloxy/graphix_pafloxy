@@ -14,7 +14,7 @@ class PatternRunner:
     def __init__(self, pattern, backend="ibmq", **kwargs):
         """
 
-        Parameteres
+        Parameters
         -----------
         pattern: :class:`graphix.pattern.Pattern` object
             MBQC pattern to be executed.
@@ -53,7 +53,7 @@ class PatternRunner:
             raise ValueError("unknown backend")
 
     def simulate(self, **kwargs):
-        """ "Perform the simulation.
+        """Perform the simulation.
 
         Parameters
         ----------
